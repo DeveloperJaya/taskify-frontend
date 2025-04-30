@@ -1,26 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import API from '../api';
 import TaskList from '../components/TaskList';
+import TaskFilter from '../components/TaskFilter';
 
 export default function Home() {
   const [tasks, setTasks] = useState([]);
+  const [filters, setFilters] = useState({ status: '', priority: '' });
 
   const loadTasks = async () => {
-    const res = await API.get('/tasks');
-    setTasks(res.data);
+    try {
+      const query = new URLSearchParams(filters).toString();
+      const res = await API.get(`/tasks?${query}`);
+      setTasks(res.data);
+    } catch (err) {
+      console.error('Error loading tasks:', err);
+      setTasks([]);
+    }
   };
 
-  const handleDelete = async id => {
-    await API.delete(`/tasks/${id}`);
+  const handleDelete = async (id) => {
+    try {
+      await API.delete(`/tasks/${id}`);
+      loadTasks();
+    } catch (err) {
+      console.error('Error deleting task:', err);
+    }
+  };
+
+  useEffect(() => {
     loadTasks();
-  };
-
-  useEffect(() => { loadTasks(); }, []);
+  }, [filters]);
 
   return (
     <div>
-      <h2></h2>
-      <TaskList tasks={tasks} onDelete={handleDelete} />
+      <TaskFilter filters={filters} setFilters={setFilters} />
+      <TaskList tasks={tasks || []} onDelete={handleDelete} />
     </div>
   );
 }
